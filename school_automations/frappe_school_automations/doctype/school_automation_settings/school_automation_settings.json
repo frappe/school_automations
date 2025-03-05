@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-05 14:32:38.637389",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "live_class_recordings_section",
+  "drive_root_folder_name",
+  "authorize_google_drive_access",
+  "column_break_ukkd",
+  "drive_root_folder_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "drive_root_folder_name",
+   "fieldtype": "Data",
+   "label": "Drive Root Folder Name"
+  },
+  {
+   "fieldname": "column_break_ukkd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "drive_root_folder_id",
+   "fieldtype": "Data",
+   "label": "Drive Root Folder ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "live_class_recordings_section",
+   "fieldtype": "Section Break",
+   "label": "Live Class Recordings"
+  },
+  {
+   "fieldname": "authorize_google_drive_access",
+   "fieldtype": "Button",
+   "label": "Authorize Google Drive Access"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-03-05 14:44:32.232246",
+ "modified_by": "Administrator",
+ "module": "Frappe School Automations",
+ "name": "School Automation Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

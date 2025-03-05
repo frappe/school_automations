@@ -50,6 +50,5 @@ ignore = [
 typing-modules = ["frappe.types.DF"]
 
 [tool.ruff.format]
-quote-style = "double"
+quote-style = "single"
 indent-style = "tab"
-docstring-code-format = true
