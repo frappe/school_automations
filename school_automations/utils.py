@@ -10,7 +10,17 @@ from googleapiclient.errors import HttpError
 from lms.lms.doctype.lms_batch.lms_batch import authenticate
 
 
-def get_zoom_recordings_for_meeting(meeting_id):
+@frappe.whitelist()
+def queue_recording_download(meeting_id: str, class_id: str):
+	# frappe.enqueue(
+	# 	get_zoom_recordings_for_meeting,
+	# 	queue="long",
+	# 	meeting_id=meeting_id
+	# )
+	get_zoom_recordings_for_meeting(int(meeting_id), class_id)
+
+
+def get_zoom_recordings_for_meeting(meeting_id: int, class_id=None):
 	check_or_create_root_folder_in_google_drive()
 
 	url = f'https://api.zoom.us/v2/meetings/{meeting_id}/recordings'
@@ -22,7 +32,9 @@ def get_zoom_recordings_for_meeting(meeting_id):
 
 	data = response.json()
 
-	recording_files = data['recording_files']
+	recording_files = data.get('recording_files')
+	if not recording_files:
+		frappe.throw("Recording not available yet!")
 
 	for f in recording_files:
 		if f['recording_type'] == 'shared_screen_with_speaker_view':
@@ -32,7 +44,14 @@ def get_zoom_recordings_for_meeting(meeting_id):
 			file_name = f"{data['topic']}.{file_extension.lower()}"
 			doc = download_and_create_file_doc(download_url, file_name)
 			folder_id = create_batch_folder_if_not_exists_in_google_drive('framework-bootcamp-pro') # TODO
-			upload_to_google_drive(doc.file_url, folder_id)
+			uploaded_file = upload_to_google_drive(doc.file_url, folder_id)
+
+			if class_id:
+				frappe.get_doc({
+					"doctype": "Recording Drive Upload Log",
+					"live_class": class_id,
+					"drive_link": f"https://drive.google.com/file/d/{uploaded_file.get('id')}/view"
+				}).insert().submit()
 			break
 
 
@@ -63,8 +82,18 @@ def upload_to_google_drive(file_url: str, folder_id: str):
 	file_path = f'{get_bench_path()}/sites/{frappe.local.site}/public/{file_url}'
 	file_metadata = {'name': os.path.basename(file_path), 'parents': [folder_id]}
 	media = MediaFileUpload(file_path, mimetype='video/mp4', resumable=True)
+	uploaded_file = google_drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
-	google_drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
+	file_id = uploaded_file.get("id")
+	permission = {
+		'type': 'anyone',
+		'role': 'reader'
+	}
+	google_drive.permissions().create(
+		fileId=file_id,
+		body=permission
+	).execute()
+	return uploaded_file
 
 
 @frappe.whitelist(allow_guest=True)
