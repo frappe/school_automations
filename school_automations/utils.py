@@ -2,6 +2,7 @@ import io
 import os
 
 import frappe
+import frappe.utils
 import requests
 from apiclient.http import MediaFileUpload
 from frappe.integrations.doctype.google_drive.google_drive import get_google_drive_object
@@ -11,9 +12,14 @@ from lms.lms.doctype.lms_batch.lms_batch import authenticate
 
 
 def upload_zoom_recording_to_drive(class_id: str):
-	join_url: str = frappe.db.get_value('LMS Live Class', class_id, 'join_url')
+	batch_name, join_url, already_uploaded = frappe.db.get_value(
+		'LMS Live Class', class_id, ['batch_name', 'join_url', 'custom_recording_uploaded']
+	)
+
+	if already_uploaded:
+		return
+
 	meeting_id = int(join_url.split('/')[-1])
-	batch_name = frappe.db.get_value('LMS Live Class', class_id, 'batch_name')
 	check_or_create_root_folder_in_google_drive()
 
 	url = f'https://api.zoom.us/v2/meetings/{meeting_id}/recordings'
@@ -158,6 +164,25 @@ def folder_exists_in_drive(drive, folder_name: str, parent_folder_id: str = None
 	for f in google_drive_folders.get('files'):
 		if f.get('name') == folder_name:
 			return f
+
+
+def cleanup_recordings(class_id: str):
+	"""Deletes recordings of this class from school site and Zoom"""
+	pass
+
+
+def pull_recordings_for_yesterdays_live_classes():
+	today = frappe.utils.today()
+	yesterday = frappe.utils.add_days(today, -1)
+
+	classes = frappe.db.get_all(
+		'LMS Live Class', filters={'custom_recording_uploaded': False, 'date': yesterday}, pluck='name'
+	)
+
+	for class_id in classes:
+		frappe.enqueue(
+			'school_automations.utils.upload_zoom_recording_to_drive', queue='long', class_id=class_id
+		)
 
 
 @frappe.whitelist()

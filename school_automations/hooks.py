@@ -15,6 +15,12 @@ doctype_js = {
     "LMS Batch" : "public/js/lms_batch_extend.js"
 }
 
+scheduler_events = {
+    "daily_long": [
+        "school_automations.utils.pull_recordings_for_yesterdays_live_classes"
+	]
+}
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
