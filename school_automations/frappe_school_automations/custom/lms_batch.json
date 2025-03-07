@@ -156,5 +156,6 @@
    "row_name": null,
    "value": "[\"section_break_earo\", \"title\", \"start_date\", \"end_date\", \"column_break_4\", \"start_time\", \"end_time\", \"timezone\", \"section_break_cssv\", \"published\", \"column_break_wfkz\", \"allow_self_enrollment\", \"column_break_vnrp\", \"certification\", \"section_break_6\", \"description\", \"column_break_hlqw\", \"instructors\", \"section_break_rgfj\", \"medium\", \"category\", \"confirmation_email_template\", \"column_break_flwy\", \"seat_count\", \"evaluation_end_date\", \"meta_image\", \"section_break_khcn\", \"batch_details\", \"batch_details_raw\", \"section_break_jgji\", \"courses\", \"assessment_tab\", \"assessment\", \"schedule_tab\", \"timetable_template\", \"column_break_anya\", \"show_live_class\", \"allow_future\", \"section_break_ontp\", \"timetable\", \"timetable_legends\", \"pricing_tab\", \"section_break_gsac\", \"paid_batch\", \"column_break_iens\", \"amount\", \"currency\", \"amount_usd\", \"customisations_tab\", \"section_break_ubxi\", \"custom_component\", \"column_break_pxgb\", \"custom_script\", \"custom_section_break_smf13\", \"custom_recordings_url\"]"
   }
- ]
+ ],
+ "sync_on_migrate": 1
 }
