@@ -10,7 +10,10 @@ app_license = "mit"
 
 required_apps = ["lms"]
 
-doctype_js = {"LMS Live Class" : "public/js/lms_live_class_extend.js"}
+doctype_js = {
+    "LMS Live Class" : "public/js/lms_live_class_extend.js",
+    "LMS Batch" : "public/js/lms_batch_extend.js"
+}
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

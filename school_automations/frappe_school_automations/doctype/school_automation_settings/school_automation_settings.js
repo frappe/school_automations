@@ -3,7 +3,14 @@
 
 frappe.ui.form.on("School Automation Settings", {
 	refresh(frm) {
+		const root_folder_id = frm.doc.drive_root_folder_id;
 
+		if (root_folder_id) {
+			frm.add_web_link(
+				`https://drive.google.com/drive/folders/${root_folder_id}`,
+				"View Drive Folder"
+			);
+		}
 	},
 	authorize_google_drive_access: function (frm) {
 		frappe.db.get_single_value("Google Drive", "refresh_token").then((value) => {
