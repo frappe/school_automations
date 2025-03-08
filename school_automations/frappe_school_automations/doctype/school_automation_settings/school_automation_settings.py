@@ -9,3 +9,4 @@ class SchoolAutomationSettings(Document):
 		doc_before_save = self.get_doc_before_save()
 		if doc_before_save and doc_before_save.drive_root_folder_name != self.drive_root_folder_name:
 			self.drive_root_folder_id = ''
+

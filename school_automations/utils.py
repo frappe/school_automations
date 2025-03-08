@@ -52,13 +52,6 @@ def upload_zoom_recording_to_drive(class_id: str):
 			file_doc = download_and_create_file_doc(download_url, file_name)
 			batch_folder = create_batch_folder_if_not_exists_in_google_drive(class_id)
 
-			frappe.db.set_value(
-				'LMS Batch',
-				batch_name,
-				'custom_recordings_url',
-				f"https://drive.google.com/drive/folders/{batch_folder.get('id')}",
-			)
-
 			uploaded_file = upload_to_google_drive(file_doc.file_url, batch_folder.get('id'))
 			frappe.get_doc(
 				{
@@ -135,10 +128,20 @@ def check_or_create_root_folder_in_google_drive():
 
 
 def create_batch_folder_if_not_exists_in_google_drive(class_id: str):
-	batch_title = frappe.db.get_value('LMS Live Class', class_id, 'batch_name.title')
+	batch_name, batch_title, recording_url = frappe.db.get_value(
+		'LMS Live Class', class_id, ['batch_name', 'batch_name.title', 'batch_name.custom_recordings_url']
+	)
 	root_folder_id = frappe.get_cached_doc('School Automation Settings').drive_root_folder_id
 	google_drive, _ = get_google_drive_object()
 	folder = create_folder_if_not_exists(google_drive, batch_title, root_folder_id)
+
+	if not recording_url:
+		frappe.db.set_value(
+			'LMS Batch',
+			batch_name,
+			'custom_recordings_url',
+			f"https://drive.google.com/drive/folders/{folder.get('id')}",
+		)
 	return folder
 
 
