@@ -10,6 +10,8 @@ from frappe.utils import get_bench_path
 from googleapiclient.errors import HttpError
 from lms.lms.doctype.lms_batch.lms_batch import authenticate
 
+ZOOM_API_BASE_PATH = 'https://api.zoom.us/v2'
+
 
 def upload_zoom_recording_to_drive(class_id: str):
 	batch_name, join_url, already_uploaded = frappe.db.get_value(
@@ -19,10 +21,10 @@ def upload_zoom_recording_to_drive(class_id: str):
 	if already_uploaded:
 		return
 
-	meeting_id = int(join_url.split('/')[-1])
 	check_or_create_root_folder_in_google_drive()
 
-	url = f'https://api.zoom.us/v2/meetings/{meeting_id}/recordings'
+	meeting_id = int(join_url.split('/')[-1])
+	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_id}/recordings'
 	headers = {
 		'Authorization': 'Bearer ' + authenticate(),
 		'content-type': 'application/json',
@@ -47,7 +49,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 			else:
 				file_name = f"{data['topic']} - Part {upload_count}.{file_extension.lower()}"
 
-			doc = download_and_create_file_doc(download_url, file_name)
+			file_doc = download_and_create_file_doc(download_url, file_name)
 			batch_folder = create_batch_folder_if_not_exists_in_google_drive(class_id)
 
 			frappe.db.set_value(
@@ -57,8 +59,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 				f"https://drive.google.com/drive/folders/{batch_folder.get('id')}",
 			)
 
-			uploaded_file = upload_to_google_drive(doc.file_url, batch_folder.get('id'))
-
+			uploaded_file = upload_to_google_drive(file_doc.file_url, batch_folder.get('id'))
 			frappe.get_doc(
 				{
 					'doctype': 'Recording Drive Upload Log',
@@ -66,6 +67,17 @@ def upload_zoom_recording_to_drive(class_id: str):
 					'drive_link': f"https://drive.google.com/file/d/{uploaded_file.get('id')}/view",
 				}
 			).insert().submit()
+
+			recording_id = f.get('id')
+
+			frappe.enqueue(
+				'school_automations.utils.cleanup_recording',
+				queue='long',
+				meeting_id=meeting_id,
+				file_name=file_doc.name,
+				recording_id=recording_id,
+				enqueue_after_commit=True,
+			)
 
 
 def download_and_create_file_doc(download_url, file_name):
@@ -103,6 +115,7 @@ def upload_to_google_drive(file_url: str, folder_id: str):
 	return uploaded_file
 
 
+# Maybe TODO
 @frappe.whitelist(allow_guest=True)
 def handle_zoom_webhook():
 	pass
@@ -166,9 +179,17 @@ def folder_exists_in_drive(drive, folder_name: str, parent_folder_id: str = None
 			return f
 
 
-def cleanup_recordings(class_id: str):
+def cleanup_recording(meeting_id: int, recording_id: str, file_name: str):
 	"""Deletes recordings of this class from school site and Zoom"""
-	pass
+	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_id}/recordings/{recording_id}'
+	headers = {
+		'Authorization': 'Bearer ' + authenticate(),
+		'content-type': 'application/json',
+	}
+	requests.delete(url, headers=headers)
+
+	# Delete the local copy
+	frappe.delete_doc('File', file_name, delete_permanently=True, force=True)
 
 
 def pull_recordings_for_yesterdays_live_classes():
@@ -188,3 +209,4 @@ def pull_recordings_for_yesterdays_live_classes():
 @frappe.whitelist()
 def queue_recording_download(class_id: str):
 	frappe.enqueue(upload_zoom_recording_to_drive, queue='long', class_id=class_id)
+	upload_zoom_recording_to_drive(class_id)
