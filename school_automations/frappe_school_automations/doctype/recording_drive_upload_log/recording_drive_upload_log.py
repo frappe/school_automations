@@ -7,15 +7,16 @@ from frappe.model.document import Document
 
 class RecordingDriveUploadLog(Document):
 	def on_submit(self):
-		frappe.db.set_value("LMS Live Class", self.live_class, {
-			"custom_recording_uploaded": True,
-			"custom_recording_url": self.drive_link
-		})
+		frappe.db.set_value(
+			'LMS Live Class',
+			self.live_class,
+			{'custom_recording_uploaded': True, 'custom_recording_url': self.drive_link},
+		)
 
 		try:
 			make_announcement_to_batch_students(self.live_class, self.drive_link)
 		except Exception:
-			frappe.log_error("Unable to make batch announcement for Recording!")
+			frappe.log_error('Unable to make batch announcement for Recording!')
 
 
 def make_announcement_to_batch_students(class_id: str, recording_link: str):
@@ -25,13 +26,12 @@ def make_announcement_to_batch_students(class_id: str, recording_link: str):
 	batch_name = live_class_doc.batch_name
 	students = frappe.db.get_all('LMS Batch Enrollment', filters={'batch': batch_name}, pluck='member')
 
-	instructor_email = frappe.db.get_all(
+	instructor_emails = frappe.db.get_all(
 		'Course Instructor',
 		filters={'parent': batch_name, 'parenttype': 'LMS Batch'},
 		fields=['instructor.email as email'],
 		pluck='email',
-		limit=1,
-	)[0]
+	)
 
 	content = f"""Hi!
 
@@ -46,7 +46,7 @@ Team Frappe School
 		'LMS Batch',
 		batch_name,
 		subject='Live class recording now available!',
-		cc=instructor_email,
+		cc=instructor_emails,
 		send_email=1,
 		recipients=students,
 		content=frappe.utils.md_to_html(content),
