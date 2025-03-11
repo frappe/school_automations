@@ -63,8 +63,9 @@ def upload_zoom_recording_to_drive(class_id: str):
 
 	frappe.enqueue(
 		'school_automations.utils.make_recording_announcement',
-		queue="default",
-		live_class_name=class_id
+		queue='default',
+		live_class_name=class_id,
+		enqueue_after_commit=True,
 	)
 
 
@@ -72,11 +73,13 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	all_recordings = {}
 
 	headers = get_authenticated_headers_for_zoom()
-	instances = requests.get(
-		f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers
-	).json().get("meetings")
+	instances = (
+		requests.get(f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers)
+		.json()
+		.get('meetings')
+	)
 
-	topic = "Frappe School Recording"
+	topic = 'Frappe School Recording'
 	for instance in instances:
 		instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
 		topic = instance_topic or topic
@@ -97,6 +100,7 @@ def get_zoom_recordings_for_instance(meeting_instance: str):
 		files = list(filter(lambda r: 'shared_screen_with_speaker_view' in r['recording_type'], files))
 
 	return data.get('topic'), files
+
 
 def download_and_create_file_doc(download_url, file_name):
 	headers = get_authenticated_headers_for_zoom()
@@ -141,6 +145,7 @@ def get_authenticated_headers_for_zoom():
 		'Authorization': 'Bearer ' + authenticate(),
 		'content-type': 'application/json',
 	}
+
 
 def check_or_create_root_folder_in_google_drive():
 	google_drive, _ = get_google_drive_object()
@@ -243,15 +248,15 @@ def make_recording_announcement(live_class_name: str):
 	try:
 		from frappe.core.doctype.communication.email import make
 
-		live_class_doc = frappe.get_doc("LMS Live Class", live_class_name)
-		recording_list = "\n"
+		live_class_doc = frappe.get_doc('LMS Live Class', live_class_name)
+		recording_list = '\n'
 
-		recordings = frappe.db.get_all("Recording Drive Upload Log", filters={
-			"live_class": live_class_name
-		}, pluck="drive_link")
+		recordings = frappe.db.get_all(
+			'Recording Drive Upload Log', filters={'live_class': live_class_name}, pluck='drive_link'
+		)
 
 		for index, link in enumerate(recordings):
-			recording_list += f" - [Recording {index+1}]({link})\n\n"
+			recording_list += f' - [Recording {index+1}]({link})\n\n'
 
 		batch_name = live_class_doc.batch_name
 		students = frappe.db.get_all('LMS Batch Enrollment', filters={'batch': batch_name}, pluck='member')
@@ -283,6 +288,6 @@ def make_recording_announcement(live_class_name: str):
 			recipients=students,
 			content=frappe.utils.md_to_html(content),
 		)
-		live_class_doc.db_set("custom_recording_announced", True)
+		live_class_doc.db_set('custom_recording_announced', True)
 	except Exception:
-		frappe.log_error("Recording Announcement to students")
+		frappe.log_error('Recording Announcement to students')
