@@ -14,8 +14,8 @@ ZOOM_API_BASE_PATH = 'https://api.zoom.us/v2'
 
 
 def upload_zoom_recording_to_drive(class_id: str):
-	join_url, already_uploaded = frappe.db.get_value(
-		'LMS Live Class', class_id, ['join_url', 'custom_recording_uploaded']
+	batch_title, join_url, already_uploaded = frappe.db.get_value(
+		'LMS Live Class', class_id, ['batch_name.title', 'join_url', 'custom_recording_uploaded']
 	)
 
 	if already_uploaded:
@@ -39,9 +39,9 @@ def upload_zoom_recording_to_drive(class_id: str):
 			upload_count += 1
 
 			if upload_count > 1:
-				file_name = f'{topic} - Part {upload_count}.{file_extension.lower()}'
+				file_name = f'{topic} - Part {upload_count} - {batch_title}.{file_extension.lower()}'
 			else:
-				file_name = f'{topic}.{file_extension.lower()}'
+				file_name = f'{topic} - {batch_title}.{file_extension.lower()}'
 
 			file_doc = download_and_create_file_doc(download_url, file_name)
 			uploaded_file = upload_to_google_drive(file_doc.file_url, batch_folder.get('id'))
