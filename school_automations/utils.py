@@ -157,7 +157,6 @@ def check_or_create_root_folder_in_google_drive():
 	folder = create_folder_if_not_exists(google_drive, automation_settings.drive_root_folder_name)
 
 	frappe.db.set_single_value('School Automation Settings', 'drive_root_folder_id', folder.get('id'))
-	frappe.db.commit()
 
 
 def create_batch_folder_if_not_exists_in_google_drive(class_id: str):
