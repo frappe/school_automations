@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-11 13:55:43.676604",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "log",
+  "column_break_mvwn",
+  "drive_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "log",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Log",
+   "options": "Recording Drive Upload Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mvwn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "drive_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Drive URL",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-03-11 13:56:31.738607",
+ "modified_by": "Administrator",
+ "module": "Frappe School Automations",
+ "name": "Class Drive Upload Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
