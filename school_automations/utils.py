@@ -61,6 +61,12 @@ def upload_zoom_recording_to_drive(class_id: str):
 				enqueue_after_commit=True,
 			)
 
+	frappe.enqueue(
+		'school_automations.utils.make_recording_announcement',
+		queue="default",
+		class_id=class_id
+	)
+
 
 def get_zoom_recordings_for_meeting(meeting_id: str):
 	all_recordings = {}
@@ -233,18 +239,19 @@ def queue_recording_download(class_id: str):
 	frappe.enqueue(upload_zoom_recording_to_drive, queue='long', class_id=class_id)
 
 
-def make_recording_announcement_if_applicable(doc, event=None):
-	if not doc.has_value_changed("custom_recording_uploaded"):
-		return
-
+def make_recording_announcement(live_class_name: str):
 	try:
 		from frappe.core.doctype.communication.email import make
 
-		live_class_doc = doc
+		live_class_doc = frappe.get_doc("LMS Live Class", live_class_name)
 		recording_list = "\n"
 
-		for index, recording in enumerate(live_class_doc.custom_recordings):
-			recording_list += f" - [Recording {index+1}]({recording.drive_url})\n\n"
+		recordings = frappe.db.get_all("Recording Drive Upload Log", filters={
+			"live_class": live_class_name
+		}, pluck="drive_link")
+
+		for index, link in enumerate(recordings):
+			recording_list += f" - [Recording {index+1}]({link})\n\n"
 
 		batch_name = live_class_doc.batch_name
 		students = frappe.db.get_all('LMS Batch Enrollment', filters={'batch': batch_name}, pluck='member')
@@ -276,5 +283,6 @@ def make_recording_announcement_if_applicable(doc, event=None):
 			recipients=students,
 			content=frappe.utils.md_to_html(content),
 		)
+		live_class_doc.db_set("custom_recording_announced", True)
 	except Exception:
 		frappe.log_error("Recording Announcement to students")

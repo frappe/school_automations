@@ -21,13 +21,6 @@ scheduler_events = {
 	]
 }
 
-
-doc_events = {
-    "LMS Live Class": {
-        "on_update": "school_automations.utils.make_recording_announcement_if_applicable"
-	}
-}
-
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
