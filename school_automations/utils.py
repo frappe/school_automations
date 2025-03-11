@@ -231,7 +231,6 @@ def pull_recordings_for_yesterdays_live_classes():
 @frappe.whitelist()
 def queue_recording_download(class_id: str):
 	frappe.enqueue(upload_zoom_recording_to_drive, queue='long', class_id=class_id)
-	upload_zoom_recording_to_drive(class_id)
 
 
 def make_recording_announcement_if_applicable(doc, event=None):
