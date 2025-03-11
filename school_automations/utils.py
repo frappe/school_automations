@@ -64,7 +64,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 	frappe.enqueue(
 		'school_automations.utils.make_recording_announcement',
 		queue="default",
-		class_id=class_id
+		live_class_name=class_id
 	)
 
 
