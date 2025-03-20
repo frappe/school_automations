@@ -282,6 +282,8 @@ Team Frappe School
 			batch_name,
 			subject='Live class recording now available!',
 			cc=instructor_emails,
+			sender="school@frappe.io",
+			sender_full_name="Team Frappe School",
 			send_email=1,
 			recipients=students,
 			content=frappe.utils.md_to_html(content),
