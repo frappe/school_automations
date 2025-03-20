@@ -268,14 +268,13 @@ def make_recording_announcement(live_class_name: str):
 		)
 
 		content = f"""Hi!
+The following recordings for **{live_class_doc.title}** class are now available:
 
-	The following recordings for **{live_class_doc.title}** class are now available:
+{recording_list}
 
-	{recording_list}
+Regards,
 
-
-	Regards,
-	Team Frappe School
+Team Frappe School
 	"""
 
 		make(
