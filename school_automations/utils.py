@@ -82,10 +82,14 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	all_recordings = {}
 
 	headers = get_authenticated_headers_for_zoom()
-	instances = make_get_request(
+	response = requests.get(
 		f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers
-	).get('meetings')
+	)
 
+	if not response.ok:
+		frappe.throw('Zoom API Error: ' + response.text)
+
+	instances = response.json().get('meeting_instances', [])
 	topic = 'Frappe School Recording'
 	for instance in instances:
 		instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
