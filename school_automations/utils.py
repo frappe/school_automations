@@ -23,6 +23,15 @@ def upload_zoom_recording_to_drive(class_id: str):
 
 	check_or_create_root_folder_in_google_drive()
 
+
+	# handle the case when the join_url has query params, they need to be removed before split
+	if '?' in join_url:
+		join_url = join_url.split('?')[0]
+
+	# handle the case when the join_url has a trailing slash
+	if join_url.endswith('/'):
+		join_url = join_url[:-1]
+
 	meeting_id = int(join_url.split('/')[-1])
 
 	topic, recordings = get_zoom_recordings_for_meeting(meeting_id)
