@@ -6,6 +6,7 @@ import frappe.utils
 import requests
 from apiclient.http import MediaFileUpload
 from frappe.integrations.doctype.google_drive.google_drive import get_google_drive_object
+from frappe.integrations.utils import make_get_request
 from frappe.utils import get_bench_path
 from googleapiclient.errors import HttpError
 from lms.lms.doctype.lms_batch.lms_batch import authenticate
@@ -22,7 +23,6 @@ def upload_zoom_recording_to_drive(class_id: str):
 		return
 
 	check_or_create_root_folder_in_google_drive()
-
 
 	# handle the case when the join_url has query params, they need to be removed before split
 	if '?' in join_url:
@@ -82,11 +82,9 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	all_recordings = {}
 
 	headers = get_authenticated_headers_for_zoom()
-	instances = (
-		requests.get(f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers)
-		.json()
-		.get('meetings')
-	)
+	instances = make_get_request(
+		f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers
+	).get('meetings')
 
 	topic = 'Frappe School Recording'
 	for instance in instances:
@@ -100,8 +98,7 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 def get_zoom_recordings_for_instance(meeting_instance: str):
 	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_instance}/recordings'
 	headers = get_authenticated_headers_for_zoom()
-	response = requests.get(url, headers=headers)
-	data = response.json()
+	data = make_get_request(url, headers=headers)
 
 	files = data.get('recording_files', [])
 
@@ -291,8 +288,8 @@ Team Frappe School
 			batch_name,
 			subject='Live class recording now available!',
 			cc=instructor_emails,
-			sender="school@frappe.io",
-			sender_full_name="Team Frappe School",
+			sender='school@frappe.io',
+			sender_full_name='Team Frappe School',
 			send_email=1,
 			recipients=students,
 			content=frappe.utils.md_to_html(content),
