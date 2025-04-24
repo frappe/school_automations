@@ -89,7 +89,7 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	if not response.ok:
 		frappe.throw('Zoom API Error: ' + response.text)
 
-	instances = response.json().get('meeting_instances', [])
+	instances = response.json().get('meetings', [])
 	topic = 'Frappe School Recording'
 	for instance in instances:
 		instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
