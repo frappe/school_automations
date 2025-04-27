@@ -100,6 +100,11 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 
 
 def get_zoom_recordings_for_instance(meeting_instance: str):
+	# url encode the meeting instance
+	import urllib.parse
+
+	meeting_instance = urllib.parse.quote(meeting_instance, safe='')
+
 	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_instance}/recordings'
 	headers = get_authenticated_headers_for_zoom()
 	data = make_get_request(url, headers=headers)
