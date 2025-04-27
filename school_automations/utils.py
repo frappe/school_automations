@@ -13,6 +13,9 @@ from lms.lms.doctype.lms_batch.lms_batch import authenticate
 
 ZOOM_API_BASE_PATH = 'https://api.zoom.us/v2'
 
+class RecordingNotFoundException(Exception):
+	pass
+
 
 def upload_zoom_recording_to_drive(class_id: str):
 	batch_title, join_url, already_uploaded = frappe.db.get_value(
@@ -82,9 +85,7 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	all_recordings = {}
 
 	headers = get_authenticated_headers_for_zoom()
-	response = requests.get(
-		f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers
-	)
+	response = requests.get(f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers)
 
 	if not response.ok:
 		frappe.throw('Zoom API Error: ' + response.text)
@@ -92,22 +93,35 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	instances = response.json().get('meetings', [])
 	topic = 'Frappe School Recording'
 	for instance in instances:
-		instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
-		topic = instance_topic or topic
-		all_recordings[instance['uuid']] = files_for_instance
+		try:
+			instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
+			topic = instance_topic or topic
+			all_recordings[instance['uuid']] = files_for_instance
+		except RecordingNotFoundException:
+			continue
 
 	return topic, all_recordings
 
 
 def get_zoom_recordings_for_instance(meeting_instance: str):
 	# url encode the meeting instance
-	import urllib.parse
+	from urllib.parse import quote
 
-	meeting_instance = urllib.parse.quote(meeting_instance, safe='')
-
+	meeting_instance = quote(quote(meeting_instance, safe=''), safe='') # double encode
 	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_instance}/recordings'
 	headers = get_authenticated_headers_for_zoom()
-	data = make_get_request(url, headers=headers)
+
+	response = requests.get(url, headers=headers)
+
+	if not response.ok:
+		error = response.json()
+
+		if error["code"] == 3301:
+			raise RecordingNotFoundException
+		else:
+			frappe.throw(f"Error fetching recording for meeting instance: {meeting_instance}")
+
+	data = response.json()
 
 	files = data.get('recording_files', [])
 
