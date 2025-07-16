@@ -16,7 +16,7 @@ frappe.ui.form.on("School Automation Settings", {
 		frappe.db.get_single_value("Google Drive", "refresh_token").then((value) => {
 			if (!value) {
 				frappe.call({
-					method: "frappe.integrations.doctype.google_drive.google_drive.authorize_access",
+					method: "offsite_backups.offsite_backups.doctype.google_drive.google_drive.authorize_access",
 					args: {
 						reauthorize: frm.doc.authorization_code ? 1 : 0,
 					},

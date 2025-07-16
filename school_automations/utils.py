@@ -5,8 +5,7 @@ import frappe
 import frappe.utils
 import requests
 from apiclient.http import MediaFileUpload
-from frappe.integrations.doctype.google_drive.google_drive import get_google_drive_object
-from frappe.integrations.utils import make_get_request
+from offsite_backups.offsite_backups.doctype.google_drive.google_drive import get_google_drive_object
 from frappe.utils import get_bench_path
 from googleapiclient.errors import HttpError
 from lms.lms.doctype.lms_batch.lms_batch import authenticate
