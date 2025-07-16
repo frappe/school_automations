@@ -17,8 +17,8 @@ class RecordingNotFoundException(Exception):
 
 
 def upload_zoom_recording_to_drive(class_id: str):
-	batch_title, join_url, already_uploaded = frappe.db.get_value(
-		'LMS Live Class', class_id, ['batch_name.title', 'join_url', 'custom_recording_uploaded']
+	batch_title, join_url, already_uploaded, zoom_account = frappe.db.get_value(
+		'LMS Live Class', class_id, ['batch_name.title', 'join_url', 'custom_recording_uploaded', 'zoom_account']
 	)
 
 	if already_uploaded:
@@ -36,7 +36,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 
 	meeting_id = int(join_url.split('/')[-1])
 
-	topic, recordings = get_zoom_recordings_for_meeting(meeting_id)
+	topic, recordings = get_zoom_recordings_for_meeting(meeting_id, zoom_account)
 	if not recordings:
 		frappe.throw('Cloud recording not available yet!')
 
@@ -54,7 +54,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 			else:
 				file_name = f'{topic} - {batch_title}.{file_extension.lower()}'
 
-			file_doc = download_and_create_file_doc(download_url, file_name)
+			file_doc = download_and_create_file_doc(download_url, file_name, zoom_account)
 			uploaded_file = upload_to_google_drive(file_doc.file_url, batch_folder.get('id'))
 			frappe.get_doc(
 				{
@@ -68,6 +68,7 @@ def upload_zoom_recording_to_drive(class_id: str):
 				'school_automations.utils.cleanup_recordings',
 				queue='long',
 				meeting_id=instance_id,
+				class_id=class_id,
 				file_name=file_doc.name,
 				enqueue_after_commit=True,
 			)
@@ -80,10 +81,10 @@ def upload_zoom_recording_to_drive(class_id: str):
 	)
 
 
-def get_zoom_recordings_for_meeting(meeting_id: str):
+def get_zoom_recordings_for_meeting(meeting_id, zoom_account: str):
 	all_recordings = {}
 
-	headers = get_authenticated_headers_for_zoom()
+	headers = get_authenticated_headers_for_zoom(zoom_account)
 	response = requests.get(f'{ZOOM_API_BASE_PATH}/past_meetings/{meeting_id}/instances', headers=headers)
 
 	if not response.ok:
@@ -93,7 +94,7 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	topic = 'Frappe School Recording'
 	for instance in instances:
 		try:
-			instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'])
+			instance_topic, files_for_instance = get_zoom_recordings_for_instance(instance['uuid'], zoom_account)
 			topic = instance_topic or topic
 			all_recordings[instance['uuid']] = files_for_instance
 		except RecordingNotFoundException:
@@ -102,13 +103,13 @@ def get_zoom_recordings_for_meeting(meeting_id: str):
 	return topic, all_recordings
 
 
-def get_zoom_recordings_for_instance(meeting_instance: str):
+def get_zoom_recordings_for_instance(meeting_instance: str, zoom_account: str):
 	# url encode the meeting instance
 	from urllib.parse import quote
 
 	meeting_instance = quote(quote(meeting_instance, safe=''), safe='') # double encode
 	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_instance}/recordings'
-	headers = get_authenticated_headers_for_zoom()
+	headers = get_authenticated_headers_for_zoom(zoom_account)
 
 	response = requests.get(url, headers=headers)
 
@@ -130,8 +131,8 @@ def get_zoom_recordings_for_instance(meeting_instance: str):
 	return data.get('topic'), files
 
 
-def download_and_create_file_doc(download_url, file_name):
-	headers = get_authenticated_headers_for_zoom()
+def download_and_create_file_doc(download_url, file_name, zoom_account: str):
+	headers = get_authenticated_headers_for_zoom(zoom_account)
 	response = requests.get(download_url, headers=headers)
 	binary_data = io.BytesIO(response.content)
 	hex_data = binary_data.getvalue()
@@ -168,9 +169,9 @@ def handle_zoom_webhook():
 	pass
 
 
-def get_authenticated_headers_for_zoom():
+def get_authenticated_headers_for_zoom(zoom_account: str):
 	return {
-		'Authorization': 'Bearer ' + authenticate(),
+		'Authorization': 'Bearer ' + authenticate(zoom_account),
 		'content-type': 'application/json',
 	}
 
@@ -242,10 +243,11 @@ def folder_exists_in_drive(drive, folder_name: str, parent_folder_id: str = None
 			return f
 
 
-def cleanup_recordings(meeting_id: int, file_name: str = None):
+def cleanup_recordings(meeting_id: int, file_name: str = None, class_id: str = None):
 	"""Deletes recordings of this class from school site and Zoom"""
 	url = f'{ZOOM_API_BASE_PATH}/meetings/{meeting_id}/recordings?action=trash'
-	headers = get_authenticated_headers_for_zoom()
+	zoom_account = frappe.get_cached_value("LMS Live Class", class_id, "zoom_account")
+	headers = get_authenticated_headers_for_zoom(zoom_account)
 	requests.delete(url, headers=headers)
 
 	# Delete the local copy
